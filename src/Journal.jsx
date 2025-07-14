@@ -1,6 +1,5 @@
-// src/Journal.jsx
 import React, { useEffect, useState } from "react";
-import { db, auth } from "./firebase";
+import { auth, db } from "./firebase";
 import {
   collection,
   addDoc,
@@ -9,57 +8,35 @@ import {
   getDocs,
   orderBy,
   serverTimestamp,
+  deleteDoc,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 
-export default function Journal({ user }) {
+export default function Journal() {
+  const [user, setUser] = useState(null);
   const [text, setText] = useState("");
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
 
-  console.log("✅ Using user prop:", user);
+  // ✅ Listen for auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log("Auth changed:", currentUser);
+      setUser(currentUser);
+    });
+    return unsubscribe;
+  }, []);
 
+  // ✅ Fetch entries when user is known
   useEffect(() => {
     if (!user) return;
 
-    async function fetchEntries() {
-      try {
-        const q = query(
-          collection(db, "journalEntries"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
-        );
-
-        const querySnapshot = await getDocs(q);
-        const userEntries = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setEntries(userEntries);
-      } catch (error) {
-        console.error("Firestore query failed:", error);
-        alert(
-          "⚡ Firestore needs a composite index for this query. Check the console for a link to auto-create it."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEntries();
-  }, [user]);
-
-  const saveEntry = async () => {
-    if (!text.trim()) return;
-
-    try {
-      await addDoc(collection(db, "journalEntries"), {
-        text,
-        createdAt: serverTimestamp(),
-        userId: user.uid,
-      });
-      setText("");
-      // Re-fetch entries
+    const fetchEntries = async () => {
+      setLoading(true);
       const q = query(
         collection(db, "journalEntries"),
         where("userId", "==", user.uid),
@@ -71,8 +48,70 @@ export default function Journal({ user }) {
         ...doc.data(),
       }));
       setEntries(userEntries);
+      setLoading(false);
+    };
+
+    fetchEntries();
+  }, [user]);
+
+  const saveEntry = async () => {
+    if (!text.trim() || !user) return;
+
+    try {
+      await addDoc(collection(db, "journalEntries"), {
+        text,
+        createdAt: serverTimestamp(),
+        userId: user.uid,
+      });
+      setText("");
+      refreshEntries();
     } catch (error) {
       console.error("Error saving entry:", error);
+    }
+  };
+
+  const refreshEntries = async () => {
+    const q = query(
+      collection(db, "journalEntries"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const userEntries = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setEntries(userEntries);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteDoc(doc(db, "journalEntries", id));
+      setEntries(entries.filter((entry) => entry.id !== id));
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+    }
+  };
+
+  const startEditing = (id, currentText) => {
+    setEditingId(id);
+    setEditingText(currentText);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingText("");
+  };
+
+  const saveEdit = async (id) => {
+    try {
+      const entryRef = doc(db, "journalEntries", id);
+      await updateDoc(entryRef, { text: editingText });
+      setEditingId(null);
+      setEditingText("");
+      refreshEntries();
+    } catch (error) {
+      console.error("Error updating entry:", error);
     }
   };
 
@@ -84,7 +123,8 @@ export default function Journal({ user }) {
     }
   };
 
-  if (!user) return <p>Please log in to view your journal.</p>;
+  if (!user) return <p>🔒 Please log in to view your journal.</p>;
+  if (loading) return <p>⏳ Loading entries...</p>;
 
   return (
     <div style={{ maxWidth: 600, margin: "auto", padding: 20 }}>
@@ -92,6 +132,7 @@ export default function Journal({ user }) {
       <button onClick={handleLogout} style={{ marginBottom: 20 }}>
         Logout
       </button>
+
       <textarea
         rows={4}
         placeholder="Write your journal entry here..."
@@ -104,24 +145,67 @@ export default function Journal({ user }) {
       </button>
 
       <h3 style={{ marginTop: 30 }}>Your Entries</h3>
-      {loading ? (
-        <p>Loading your entries...</p>
-      ) : entries.length === 0 ? (
-        <p>No entries yet.</p>
-      ) : (
-        <ul>
-          {entries.map(({ id, text, createdAt }) => (
-            <li key={id} style={{ marginBottom: 15 }}>
-              <div>{text}</div>
-              <small style={{ color: "#555" }}>
-                {createdAt?.toDate
-                  ? createdAt.toDate().toLocaleString()
-                  : "Saving..."}
-              </small>
-            </li>
-          ))}
-        </ul>
-      )}
+      {entries.length === 0 && <p>No entries yet.</p>}
+
+      <ul>
+        {entries.map(({ id, text, createdAt }) => (
+          <li key={id} style={{ marginBottom: 15 }}>
+            {editingId === id ? (
+              <>
+                <textarea
+                  rows={3}
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  style={{ width: "100%", marginBottom: 5 }}
+                />
+                <button
+                  onClick={() => saveEdit(id)}
+                  style={{ marginRight: 5 }}
+                >
+                  Save
+                </button>
+                <button onClick={cancelEditing}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <div>{text}</div>
+                <small style={{ color: "#555" }}>
+                  {createdAt?.toDate
+                    ? createdAt.toDate().toLocaleString()
+                    : "Saving..."}
+                </small>
+                <br />
+                <button
+                  onClick={() => startEditing(id, text)}
+                  style={{
+                    marginTop: 5,
+                    backgroundColor: "orange",
+                    color: "white",
+                    border: "none",
+                    padding: "5px 10px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Edit
+                </button>{" "}
+                <button
+                  onClick={() => handleDelete(id)}
+                  style={{
+                    marginTop: 5,
+                    backgroundColor: "red",
+                    color: "white",
+                    border: "none",
+                    padding: "5px 10px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

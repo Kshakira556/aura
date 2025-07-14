@@ -1,88 +1,114 @@
 ---
 
-## 📝 `README.md`
+## ✅ `README.md`
 
 ````markdown
-# 🏠 AURA — AI Assistant
+# ✨ Aura
 
-**AURA** is a secure web AI assistant designed to protect users from human threats (scams, stalking, manipulation) and eventually AI threats — using behavioral analysis, emotional radar, and autonomous defense mechanisms.
-
----
-
-## 🚀 Current MVP Progress
-
-✅ **Phase 1:**  
-- User Authentication with **Firebase Auth**
-- Login & Signup form using **React**
-- Smart auto-switch: if signup email already exists, it switches to login and logs in automatically.
+A simple journaling app built with **React** + **Firebase**.  
+Users can **sign up**, **log in**, and **save personal journal entries** to their Firestore DB.
 
 ---
 
-## 🛠️ Tech Stack So Far
+## 📂 Current Features
 
-- Frontend: **React**, **JSX**, **CSS**
-- Backend/Auth: **Firebase Authentication**
-- Hosting: Runs locally with **Vite**
+✅ User authentication (email & password)  
+✅ Auto-switch to login if email already exists  
+✅ Journal page shows only your entries  
+✅ Create new entries — stored with timestamp and user ID  
+✅ Logout and switch users
 
 ---
 
-## ▶️ How to Run This Project (So Far)
+## 🚀 How to run it
 
-1. **Install dependencies**
+1. **Clone the repo**  
+   ```bash
+   git clone https://github.com/Kshakira556/aura.git
+   cd aura
+````
+
+2. **Install dependencies**
 
    ```bash
    npm install
-````
+   ```
 
-2. **Start the development server**
+3. **Add your Firebase config**
+   Check `src/firebase.js` and ensure your Firebase project config is correct:
+
+   ```js
+   // src/firebase.js
+   import { initializeApp } from "firebase/app";
+   import { getAuth } from "firebase/auth";
+   import { getFirestore } from "firebase/firestore";
+
+   const firebaseConfig = {
+     apiKey: "...",
+     authDomain: "...",
+     projectId: "...",
+     ...
+   };
+
+   const app = initializeApp(firebaseConfig);
+   export const auth = getAuth(app);
+   export const db = getFirestore(app);
+   ```
+
+4. **Start the dev server**
 
    ```bash
    npm run dev
    ```
 
-3. Open your browser and visit the local URL shown in the terminal, e.g.:
-
-   ```
-   http://localhost:5173/
-   ```
-
-4. **Sign up / Log in**
-
-   * Use any email + password.
-   * If the email is already in use, the app auto-switches to login.
+   Then visit: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 🗺️ What’s Next (Planned Features)
+## ⚡ Next Up
 
-✨ **Next Steps:**
+* ✅ Set up Firestore security rules (optional, but recommended!)
+* ✅ Create any needed composite indexes in Firestore if you see a query error.
+* ⏭️ **Next feature:**
 
-1. **Secure Personal Journal**
-
-   * Users can write and save private entries to Firebase Firestore.
-
-2. **GPT-Powered Analysis**
-
-   * Use OpenAI GPT-4 API to analyze entries for mood, sentiment, and threats.
-
-3. **Web Alert Dashboard**
-
-   * Show flagged journal entries with risk levels.
-
-4. **Email/Notification Alerts**
-
-   * Send email alerts if risky behavior is detected.
+  * ✅ UI improvements (nicer design for forms & journal)
+  * 🗑️ Add ability to delete an entry
+  * ✏️ Add ability to edit an entry
+  * 📅 Show entry timestamps nicely
 
 ---
 
-## 💡 Notes
+## 🔒 Firestore Setup Tips
 
-* This project is currently for **web** — mobile version will come later.
-* Using **Vite** for fast local development.
-* Firebase config is stored in `/src/firebase.js`
-
----
-
-**Built by Shakira 🫶🏽**
+✔️ Your Firestore should have a `journalEntries` collection with documents like:
 
 ```
+journalEntries/
+  <auto-id>/
+    text: "My first entry"
+    createdAt: <timestamp>
+    userId: <Firebase UID>
+```
+
+✔️ If you see `The query requires an index` → click the console link, Firebase auto-generates the index for you.
+
+---
+
+## 💙 Contributing
+
+* If you spot any bugs, feel free to open an issue or PR.
+* Future plans: Tagging, search, multiple journals per user, offline mode.
+
+---
+
+## 🪶 License
+
+This project is MIT licensed — do whatever you like with it.
+
+---
+
+**Happy journaling! ✨**
+
+```
+
+---
