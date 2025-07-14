@@ -1,0 +1,59 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 320px;
+  margin: 80px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+form input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+form button {
+  width: 100%;
+  padding: 10px;
+  background: #0066ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+form button:hover {
+  background: #0052cc;
+}
+
+.toggle-link {
+  margin-top: 15px;
+  text-align: center;
+  color: #0066ff;
+  cursor: pointer;
+}
+
+.message {
+  text-align: center;
+  margin-top: 10px;
+  color: green;
+}
